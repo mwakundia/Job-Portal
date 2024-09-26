@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "733318750263",
+    "project_id": "alumnijobapp",
+    "storage_bucket": "alumnijobapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:733318750263:android:dbea0ae8c3cc219eea9fb2",
+        "android_client_info": {
+          "package_name": "com.example.alumnijobapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBObyszvID6pAMYxAVbj3xH9utqEskdEwU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
