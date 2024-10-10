@@ -23,6 +23,7 @@ fun NavGraph(
         composable(Screen.Profile.route) { ProfileScreen(navController, sharedViewModel) }
         composable(Screen.AdminPostJob.route) { AdminPostJobScreen(navController, sharedViewModel) }
         composable(Screen.Notifications.route) { NotificationsScreen(navController, sharedViewModel) }
-        composable(Screen.Dashboard.route) { DashboardScreen(navController, sharedViewModel) }
+        composable(Screen.AdminDashboard.route) { AdminDashboardScreen(navController, sharedViewModel) }
+        composable(Screen.AlumniDashboard.route) { AlumniDashboardScreen(navController, sharedViewModel) }
     }
 }
