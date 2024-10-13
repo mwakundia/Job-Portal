@@ -7,11 +7,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.alumnijobapp.nav.Screen
 import com.example.alumnijobapp.utils.SharedViewModel
+import com.example.alumnijobapp.utils.Job // Make sure this import is correct
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,7 +22,7 @@ fun JobDetailScreen(
     sharedViewModel: SharedViewModel,
     modifier: Modifier = Modifier
 ) {
-    // Assuming selectedJob is StateFlow in SharedViewModel
+    // Collecting the selected job from SharedViewModel
     val selectedJob by sharedViewModel.selectedJob.collectAsState()
 
     Scaffold(
@@ -72,6 +74,13 @@ fun JobDetailScreen(
                 ) {
                     Text("Apply Now")
                 }
+            } ?: run {
+                // Handle case when selectedJob is null
+                Text(
+                    text = "No job details available.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
             }
         }
     }

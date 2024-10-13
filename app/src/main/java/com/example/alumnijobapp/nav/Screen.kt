@@ -10,9 +10,8 @@ sealed class Screen(val route: String) {
     object Profile : Screen("profile")
     object AdminPostJob : Screen("admin_post_job")
     object Notifications : Screen("notifications")
-    object Dashboard : Screen("dashboard")
+    object AdminAppliedJobs : Screen("admin_applied_jobs")
 
-    // Added screens
     object ForgotPassword : Screen("forgot_password")
     object ResetPassword : Screen("reset_password")
     object AdminJobManagement : Screen("admin_job_management")

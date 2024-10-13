@@ -8,6 +8,7 @@ data class UserData(
     val name: String = "",
     val email: String = "",
     val isAdmin: Boolean = false,
+    val role: UserRole = UserRole.ALUMNI,
     val skills: List<String> = emptyList(),
     val appliedJobs: List<String> = emptyList(),
     val savedJobs: List<String> = emptyList(),
@@ -76,4 +77,13 @@ data class JobAnalytics(
     val totalJobs: Int = 0,
     val activeJobs: Int = 0,
     val applicationsThisMonth: Int = 0
+)
+data class JobApplication(
+    val id: String,
+    val jobId: String,
+    val jobTitle: String,
+    val applicantId: String,
+    val applicantName: String,
+    val applicationDate: String,
+    val status: String
 )

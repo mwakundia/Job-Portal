@@ -15,7 +15,10 @@ fun NavGraph(
 ) {
     NavHost(navController = navController, startDestination = Screen.Welcome.route) {
         composable(Screen.Welcome.route) { WelcomeScreen(navController) }
-        composable(Screen.Login.route) { LoginScreen(navController, sharedViewModel) }
+        composable(Screen.Login.route + "/{role}") { backStackEntry ->
+            val role = backStackEntry.arguments?.getString("role")
+            LoginScreen(navController, sharedViewModel, redirectRole = role)
+        }
         composable(Screen.Signup.route) { SignupScreen(navController, sharedViewModel) }
         composable(Screen.JobList.route) { JobListScreen(navController, sharedViewModel) }
         composable(Screen.JobDetail.route) { JobDetailScreen(navController, sharedViewModel) }
@@ -25,5 +28,5 @@ fun NavGraph(
         composable(Screen.Notifications.route) { NotificationsScreen(navController, sharedViewModel) }
         composable(Screen.AdminDashboard.route) { AdminDashboardScreen(navController, sharedViewModel) }
         composable(Screen.AlumniDashboard.route) { AlumniDashboardScreen(navController, sharedViewModel) }
-    }
+        composable(Screen.AdminAppliedJobs.route) { AdminAppliedJobsScreen(navController, sharedViewModel) }    }
 }
