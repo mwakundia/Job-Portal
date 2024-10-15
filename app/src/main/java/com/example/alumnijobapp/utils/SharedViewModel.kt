@@ -3,7 +3,6 @@ package com.example.alumnijobapp.utils
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,6 +10,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Date
 
 class SharedViewModel : ViewModel() {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -24,7 +24,6 @@ class SharedViewModel : ViewModel() {
 
     private val _selectedJob = MutableStateFlow<Job?>(null)
     val selectedJob: StateFlow<Job?> = _selectedJob
-
 
     private val _jobs = MutableStateFlow<List<Job>>(emptyList())
     val jobs: StateFlow<List<Job>> = _jobs
@@ -56,6 +55,27 @@ class SharedViewModel : ViewModel() {
         }
     }
 
+    suspend fun getAllUsers(): List<UserData> = withContext(Dispatchers.IO) {
+        try {
+            val querySnapshot = firestore.collection("users").get().await()
+            return@withContext querySnapshot.toObjects(UserData::class.java)
+        } catch (e: Exception) {
+            _error.value = "Failed to fetch users: ${e.message}"
+            return@withContext emptyList()
+        }
+    }
+
+    suspend fun toggleUserActivation(userId: String) = withContext(Dispatchers.IO) {
+        try {
+            val userRef = firestore.collection("users").document(userId)
+            val userSnapshot = userRef.get().await()
+            val currentActiveStatus = userSnapshot.getBoolean("isActive") ?: true
+            userRef.update("isActive", !currentActiveStatus).await()
+        } catch (e: Exception) {
+            _error.value = "Failed to toggle user activation: ${e.message}"
+        }
+    }
+
     fun fetchJobApplications() {
         viewModelScope.launch {
             try {
@@ -71,6 +91,23 @@ class SharedViewModel : ViewModel() {
                 _jobApplications.value = querySnapshot.toObjects(JobApplication::class.java)
             } catch (e: Exception) {
                 _error.value = "Failed to fetch job applications: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteJob(jobId: String) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _error.value = null
+                withContext(Dispatchers.IO) {
+                    firestore.collection("jobs").document(jobId).delete().await()
+                }
+                fetchJobs()
+            } catch (e: Exception) {
+                _error.value = "Failed to delete job: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -104,15 +141,16 @@ class SharedViewModel : ViewModel() {
                 withContext(Dispatchers.IO) {
                     auth.signInWithEmailAndPassword(email, password).await()
                 }
-                fetchCurrentUser()
-                fetchJobs()
-                fetchJobApplications()
-                fetchNotifications()
-                fetchNetworkingEvents()
-
-                _currentUser.value?.let { user ->
-                    onResult(Result.success(user.role))
-                } ?: onResult(Result.failure(Exception("User data not found")))
+                val userData = fetchCurrentUser()
+                if (userData != null) {
+                    fetchJobs()
+                    fetchJobApplications()
+                    fetchNotifications()
+                    fetchNetworkingEvents()
+                    onResult(Result.success(userData.role))
+                } else {
+                    onResult(Result.failure(Exception("User data not found")))
+                }
             } catch (e: Exception) {
                 _error.value = "Login failed: ${e.message}"
                 onResult(Result.failure(e))
@@ -145,8 +183,12 @@ class SharedViewModel : ViewModel() {
 
                 val userData = UserData(
                     id = userId,
+                    firstName = name.split(" ").firstOrNull() ?: "",
+                    lastName = name.split(" ").lastOrNull() ?: "",
+                    isActive = true,
                     name = name,
                     email = email,
+                    isAdmin = (role == UserRole.ADMIN),
                     role = role
                 )
 
@@ -170,18 +212,21 @@ class SharedViewModel : ViewModel() {
         }
     }
 
-    private suspend fun fetchCurrentUser() {
-        try {
+    private suspend fun fetchCurrentUser(): UserData? {
+        return try {
             _isLoading.value = true
             _error.value = null
             val userId = auth.currentUser?.uid ?: throw Exception("User not logged in")
             val userDoc = withContext(Dispatchers.IO) {
                 firestore.collection("users").document(userId).get().await()
             }
-            _currentUser.value = userDoc.toObject(UserData::class.java)
-            _isAdmin.value = (_currentUser.value?.role == UserRole.ADMIN)
+            val userData = userDoc.toObject(UserData::class.java)
+            _currentUser.value = userData
+            _isAdmin.value = (userData?.role == UserRole.ADMIN)
+            userData
         } catch (e: Exception) {
             _error.value = "Failed to fetch user data: ${e.message}"
+            null
         } finally {
             _isLoading.value = false
         }
@@ -222,24 +267,25 @@ class SharedViewModel : ViewModel() {
         }
     }
 
-    fun selectJob(job: Job) {
-        // Implementation for selecting a job
-    }
-
-    fun applyForJob(jobId: String) {
+    fun applyForJob(jobId: String, jobTitle: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _error.value = null
                 val userId = auth.currentUser?.uid ?: throw Exception("User not logged in")
-                if (_currentUser.value?.role == UserRole.ALUMNI) {
-                    withContext(Dispatchers.IO) {
-                        firestore.collection("users").document(userId)
-                            .update("appliedJobs", FieldValue.arrayUnion(jobId))
-                            .await()
-                    }
-                    fetchCurrentUser()
+                val jobApplication = JobApplication(
+                    id = firestore.collection("jobApplications").document().id,
+                    jobId = jobId,
+                    jobTitle = jobTitle,
+                    applicantId = userId,
+                    applicantName = _currentUser.value?.name ?: "",
+                    status = "Pending",
+                    applicationDate = Date()
+                )
+                withContext(Dispatchers.IO) {
+                    firestore.collection("jobApplications").document(jobApplication.id).set(jobApplication).await()
                 }
+                fetchJobApplications()
             } catch (e: Exception) {
                 _error.value = "Failed to apply for job: ${e.message}"
             } finally {
@@ -248,44 +294,37 @@ class SharedViewModel : ViewModel() {
         }
     }
 
-    fun postJob(job: Job) {
+    fun postJob(
+        title: String,
+        company: String,
+        location: String,
+        salary: String,
+        type: String,
+        description: String
+    ) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _error.value = null
-                if (_isAdmin.value) {
-                    withContext(Dispatchers.IO) {
-                        firestore.collection("jobs").add(job).await()
-                    }
-                    fetchJobs()
-                } else {
-                    throw Exception("Only admins can post jobs")
+                val userId = auth.currentUser?.uid ?: throw Exception("User not logged in")
+                val newJob = Job(
+                    id = firestore.collection("jobs").document().id,
+                    title = title,
+                    company = company,
+                    description = description,
+                    location = location,
+                    salary = salary,
+                    type = type,
+                    postedBy = userId,
+                    postedDate = Date(),
+                    isApproved = _isAdmin.value
+                )
+                withContext(Dispatchers.IO) {
+                    firestore.collection("jobs").document(newJob.id).set(newJob).await()
                 }
+                fetchJobs()
             } catch (e: Exception) {
                 _error.value = "Failed to post job: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun approveJob(jobId: String) {
-        viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _error.value = null
-                if (_isAdmin.value) {
-                    withContext(Dispatchers.IO) {
-                        firestore.collection("jobs").document(jobId)
-                            .update("isApproved", true)
-                            .await()
-                    }
-                    fetchJobs()
-                } else {
-                    throw Exception("Only admins can approve jobs")
-                }
-            } catch (e: Exception) {
-                _error.value = "Failed to approve job: ${e.message}"
             } finally {
                 _isLoading.value = false
             }
@@ -330,37 +369,7 @@ class SharedViewModel : ViewModel() {
         }
     }
 
-    fun createNetworkingEvent(event: NetworkingEvent) {
-        viewModelScope.launch {
-            try {
-                _isLoading.value = true
-                _error.value = null
-                if (_isAdmin.value) {
-                    withContext(Dispatchers.IO) {
-                        firestore.collection("networkingEvents").add(event).await()
-                    }
-                    fetchNetworkingEvents()
-                } else {
-                    throw Exception("Only admins can create networking events")
-                }
-            } catch (e: Exception) {
-                _error.value = "Failed to create networking event: ${e.message}"
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    fun getUserAnalytics(): UserAnalytics {
-        // Implement user analytics logic here
-        return UserAnalytics()
-    }
-
-    fun getJobAnalytics(): JobAnalytics {
-        if (!_isAdmin.value) {
-            return JobAnalytics() // Return empty analytics for non-admins
-        }
-        // Implement job analytics logic here
-        return JobAnalytics()
+    fun selectJob(job: Job?) {
+        _selectedJob.value = job
     }
 }

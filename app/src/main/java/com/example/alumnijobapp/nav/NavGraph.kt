@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.alumnijobapp.screen.*
 import com.example.alumnijobapp.utils.SharedViewModel
+import com.google.android.libraries.intelligence.acceleration.Analytics
 
 @Composable
 fun NavGraph(
@@ -28,5 +29,14 @@ fun NavGraph(
         composable(Screen.Notifications.route) { NotificationsScreen(navController, sharedViewModel) }
         composable(Screen.AdminDashboard.route) { AdminDashboardScreen(navController, sharedViewModel) }
         composable(Screen.AlumniDashboard.route) { AlumniDashboardScreen(navController, sharedViewModel) }
-        composable(Screen.AdminAppliedJobs.route) { AdminAppliedJobsScreen(navController, sharedViewModel) }    }
+        composable(Screen.AdminAppliedJobs.route) { AdminAppliedJobsScreen(navController, sharedViewModel) }
+
+        // Inside your NavHost composable
+        composable(Screen.JobList.route) { ManageJobsScreen(navController, sharedViewModel) }
+        composable(Screen.AdminUserManagement.route) { UserManagementScreen(navController, sharedViewModel) }
+        composable(Screen.Analytics.route) { AnalyticsScreen(navController,sharedViewModel) }
+//        composable(Screen.EditJob.route) { EditJobScreen(navController, sharedViewModel) }
+//        composable(Screen.EditUser.route) { EditUserScreen(navController, sharedViewModel) }
+
+    }
 }

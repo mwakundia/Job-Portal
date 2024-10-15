@@ -5,6 +5,9 @@ import java.util.Date
 
 data class UserData(
     val id: String = "",
+    val firstName: String,
+    val lastName: String,
+    val isActive: Boolean,
     val name: String = "",
     val email: String = "",
     val isAdmin: Boolean = false,
@@ -21,16 +24,17 @@ data class UserData(
 
 data class Job(
     val id: String = "",
-    val title: String = "",
-    val company: String = "",
+    val title: String = "", // renamed to 'title' to match the parameter in postJob function
+    val company: String = "", // renamed to 'company' to match the parameter in postJob function
     val description: String = "",
     val location: String = "",
     val salary: String = "",
     val requirements: List<String> = emptyList(),
-    @ServerTimestamp
+    val isApproved: Boolean = false,
+    @ServerTimestamp val createdAt: Date? = null,
     val postedDate: Date? = null,
     val postedBy: String = "",
-    val type: String = "",
+    val type: String = "", // renamed to 'type' to match the parameter in postJob function
     val applicants: List<String> = emptyList(),
     val status: String = "active",
     val category: String = "",
@@ -67,16 +71,13 @@ data class NetworkingEvent(
     val location: String = ""
 )
 
-data class UserAnalytics(
-    val totalUsers: Int = 0,
-    val activeUsers: Int = 0,
-    val newUsersThisMonth: Int = 0
-)
 
-data class JobAnalytics(
-    val totalJobs: Int = 0,
-    val activeJobs: Int = 0,
-    val applicationsThisMonth: Int = 0
+data class AnalyticsScreenData(
+    val totalUsers: Int,
+    val activeJobs: Int,
+    val totalApplications: Int,
+    val avgApplicationsPerJob: Double,
+    val monthlyJobPostings: List<Pair<String, Int>>
 )
 data class JobApplication(
     val id: String,
@@ -84,6 +85,6 @@ data class JobApplication(
     val jobTitle: String,
     val applicantId: String,
     val applicantName: String,
-    val applicationDate: String,
+    val applicationDate: Date? = null,
     val status: String
 )

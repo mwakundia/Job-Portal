@@ -11,6 +11,11 @@ sealed class Screen(val route: String) {
     object AdminPostJob : Screen("admin_post_job")
     object Notifications : Screen("notifications")
     object AdminAppliedJobs : Screen("admin_applied_jobs")
+    object Analytics : Screen("analytics")
+
+
+    object Network : Screen("network")
+    object AdminEditJob : Screen("admin_edit_job/{jobId}")
 
     object ForgotPassword : Screen("forgot_password")
     object ResetPassword : Screen("reset_password")

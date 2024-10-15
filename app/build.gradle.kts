@@ -61,6 +61,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-messaging:23.1.2")
 
     // Kotlin Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
@@ -76,8 +77,22 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.navigation.compose)
 
-    implementation ("androidx.compose.material3:material3:1.2.0-alpha03")
-    implementation ("androidx.compose.material:material-icons-extended:1.5.0")
+    // Charts and Graphs
+    implementation("com.patrykandpatryk.vico:compose:1.6.5")
+    implementation("com.patrykandpatryk.vico:compose-m3:1.6.5")
+
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:20.7.0")
+
+    // Material Design libraries
+    implementation("androidx.compose.material3:material3:1.2.0-alpha03")
+    implementation("androidx.compose.material:material-icons-extended:1.5.0")
+    implementation("com.google.android.gms:play-services-maps:18.1.0")
+
+    // Room Database
+    implementation(libs.androidx.room.ktx)
+    implementation(libs.vision.internal.vkp)
+
     // Testing dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
