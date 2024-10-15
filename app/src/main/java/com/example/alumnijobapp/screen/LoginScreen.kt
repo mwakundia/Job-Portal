@@ -1,5 +1,6 @@
 package com.example.alumnijobapp.screen
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,6 +16,8 @@ import androidx.navigation.NavController
 import com.example.alumnijobapp.nav.Screen
 import com.example.alumnijobapp.utils.SharedViewModel
 import com.example.alumnijobapp.utils.UserRole
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,6 +26,9 @@ fun LoginScreen(navController: NavController, sharedViewModel: SharedViewModel, 
     var password by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(redirectRole) {
         if (redirectRole != null) {
@@ -37,7 +43,7 @@ fun LoginScreen(navController: NavController, sharedViewModel: SharedViewModel, 
                 title = { Text("Login", style = MaterialTheme.typography.headlineMedium) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -128,28 +134,64 @@ fun LoginScreen(navController: NavController, sharedViewModel: SharedViewModel, 
 
                     Button(
                         onClick = {
-                            sharedViewModel.login(email, password) { result ->
-                                result.onSuccess { role ->
-                                    when (role) {
-                                        UserRole.ALUMNI -> navController.navigate(Screen.AlumniDashboard.route)
-                                        UserRole.ADMIN -> navController.navigate(Screen.AdminDashboard.route)
+                            coroutineScope.launch {
+                                isLoading = true
+                                showError = false
+                                Log.d("LoginScreen", "Attempting login for email: $email")
+                                sharedViewModel.login(email, password) { result ->
+                                    result.onSuccess { role ->
+                                        Log.d("LoginScreen", "Login successful, role: $role")
+                                        when (role) {
+                                            UserRole.ALUMNI -> {
+                                                Log.d(
+                                                    "LoginScreen",
+                                                    "Navigating to Alumni Dashboard"
+                                                )
+                                                navController.navigate(Screen.AlumniDashboard.route) {
+                                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                                }
+                                            }
+
+                                            UserRole.ADMIN -> {
+                                                Log.d(
+                                                    "LoginScreen",
+                                                    "Navigating to Admin Dashboard"
+                                                )
+                                                navController.navigate(Screen.AdminDashboard.route) {
+                                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                                }
+                                            }
+                                        }
                                     }
-                                }
-                                result.onFailure { exception ->
-                                    errorMessage = exception.message ?: "Login failed"
-                                    showError = true
+                                    result.onFailure { exception ->
+                                        Log.e("LoginScreen", "Login failed", exception)
+                                        errorMessage = when (exception) {
+                                            is IllegalArgumentException -> "Invalid email or password. Please try again."
+                                            else -> "An unexpected error occurred. Please try again later."
+                                        }
+                                        showError = true
+                                    }
+                                    isLoading = false
                                 }
                             }
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoading
                     ) {
-                        Text(
-                            "Login",
-                            style = MaterialTheme.typography.titleMedium
-                        )
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                        } else {
+                            Text(
+                                "Login",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                        }
                     }
                 }
             }

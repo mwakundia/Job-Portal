@@ -1,5 +1,6 @@
 package com.example.alumnijobapp.utils
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -149,9 +150,11 @@ class SharedViewModel : ViewModel() {
                     fetchNetworkingEvents()
                     onResult(Result.success(userData.role))
                 } else {
-                    onResult(Result.failure(Exception("User data not found")))
+                    Log.e("SharedViewModel", "User data is null after fetching")
+                    throw Exception("User data not found. Please try again or contact support.")
                 }
             } catch (e: Exception) {
+                Log.e("SharedViewModel", "Login failed", e)
                 _error.value = "Login failed: ${e.message}"
                 onResult(Result.failure(e))
             } finally {
@@ -204,6 +207,7 @@ class SharedViewModel : ViewModel() {
                 fetchNetworkingEvents()
                 onResult(Result.success(role))
             } catch (e: Exception) {
+                Log.e("SharedViewModel", "Signup failed", e)
                 _error.value = "Signup failed: ${e.message}"
                 onResult(Result.failure(e))
             } finally {
@@ -220,17 +224,29 @@ class SharedViewModel : ViewModel() {
             val userDoc = withContext(Dispatchers.IO) {
                 firestore.collection("users").document(userId).get().await()
             }
+            Log.d("SharedViewModel", "User document data: ${userDoc.data}")
             val userData = userDoc.toObject(UserData::class.java)
+            if (userData == null) {
+                Log.e("SharedViewModel", "Failed to parse user data. Document exists: ${userDoc.exists()}")
+                if (userDoc.exists()) {
+                    userDoc.data?.forEach { (key, value) ->
+                        Log.d("SharedViewModel", "Field: $key, Value: $value")
+                    }
+                }
+                throw Exception("Failed to parse user data")
+            }
             _currentUser.value = userData
-            _isAdmin.value = (userData?.role == UserRole.ADMIN)
+            _isAdmin.value = (userData.role == UserRole.ADMIN)
             userData
         } catch (e: Exception) {
+            Log.e("SharedViewModel", "Failed to fetch user data", e)
             _error.value = "Failed to fetch user data: ${e.message}"
             null
         } finally {
             _isLoading.value = false
         }
     }
+
 
     fun logout() {
         auth.signOut()
@@ -260,6 +276,7 @@ class SharedViewModel : ViewModel() {
                 }
                 _jobs.value = querySnapshot.toObjects(Job::class.java)
             } catch (e: Exception) {
+                Log.e("SharedViewModel", "Failed to fetch jobs", e)
                 _error.value = "Failed to fetch jobs: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -287,6 +304,7 @@ class SharedViewModel : ViewModel() {
                 }
                 fetchJobApplications()
             } catch (e: Exception) {
+                Log.e("SharedViewModel", "Failed to apply for job", e)
                 _error.value = "Failed to apply for job: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -324,6 +342,7 @@ class SharedViewModel : ViewModel() {
                 }
                 fetchJobs()
             } catch (e: Exception) {
+                Log.e("SharedViewModel", "Failed to post job", e)
                 _error.value = "Failed to post job: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -345,6 +364,7 @@ class SharedViewModel : ViewModel() {
                 }
                 _notifications.value = querySnapshot.toObjects(Notification::class.java)
             } catch (e: Exception) {
+                Log.e("SharedViewModel", "Failed to fetch notifications", e)
                 _error.value = "Failed to fetch notifications: ${e.message}"
             } finally {
                 _isLoading.value = false
@@ -362,6 +382,7 @@ class SharedViewModel : ViewModel() {
                 }
                 _networkingEvents.value = querySnapshot.toObjects(NetworkingEvent::class.java)
             } catch (e: Exception) {
+                Log.e("SharedViewModel", "Failed to fetch networking events", e)
                 _error.value = "Failed to fetch networking events: ${e.message}"
             } finally {
                 _isLoading.value = false

@@ -20,7 +20,12 @@ data class UserData(
     val profileImageUrl: String = "",
     val bio: String = "",
     val experience: List<Experience> = emptyList()
-)
+) {
+    // No-argument constructor for Firestore
+    constructor() : this("", "", "", true, "", "", false, UserRole.ALUMNI)
+}
+
+
 
 data class Job(
     val id: String = "",
